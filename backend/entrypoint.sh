@@ -10,12 +10,9 @@ echo "PostgreSQL started"
 # Создание директории для данных, если она не существует
 mkdir -p /app/data
 
-# Выполнение миграций в правильном порядке
-echo "Applying migrations for users app first..."
-python manage.py migrate users
-
-echo "Applying migrations for all other apps..."
-python manage.py migrate --fake-initial
+# Выполнение миграций для всех приложений
+echo "Applying migrations..."
+python manage.py migrate
 
 # Сбор статических файлов
 python manage.py collectstatic --no-input
@@ -23,7 +20,7 @@ python manage.py collectstatic --no-input
 # Создание изображения по умолчанию для рецептов
 python manage.py create_default_image
 
-# Импорт ингредиентов, если их нет
+# Импорт ингредиентов
 python manage.py import_ingredients
 
 # Создание тестовых данных

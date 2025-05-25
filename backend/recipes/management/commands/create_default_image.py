@@ -15,7 +15,7 @@ class Command(BaseCommand):
             os.makedirs(images_dir, exist_ok=True)
             
             # Путь к файлу изображения по умолчанию
-            default_image_path = os.path.join(images_dir, 'default_recipe.jpg')
+            default_image_path = os.path.join(images_dir, 'default_recipe.png')
             
             # Проверяем, существует ли файл
             if not os.path.exists(default_image_path):

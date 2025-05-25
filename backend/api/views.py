@@ -157,7 +157,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    """Представление для пользователей."""
+    """Представление для пользователей.
+    
+    Доступно по URL /api/profiles/
+    Предоставляет методы для работы с профилем пользователя
+    и операции подписки/отписки.
+    """
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
     pagination_class = CustomPagination

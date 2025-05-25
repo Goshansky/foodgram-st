@@ -130,7 +130,7 @@ class Command(BaseCommand):
                         name=recipe_data['name'],
                         text=recipe_data['text'],
                         cooking_time=recipe_data['cooking_time'],
-                        image='recipes/images/default_recipe.jpg'
+                        image='recipes/images/default_recipe.png'
                     )
                     
                     # Добавление случайных тегов
