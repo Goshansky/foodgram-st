@@ -4,8 +4,12 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt \
+    && apt-get update \
+    && apt-get install -y netcat-openbsd
 
 COPY . .
 
-CMD ["gunicorn", "foodgram.wsgi:application", "--bind", "0.0.0.0:8000"] 
+RUN chmod +x entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"] 
