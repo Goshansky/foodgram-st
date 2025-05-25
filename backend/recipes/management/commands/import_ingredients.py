@@ -12,9 +12,16 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            data_path = os.path.join(
-                settings.BASE_DIR, '..', 'data', 'ingredients.json'
-            )
+            # Точный путь к файлу в контейнере
+            data_path = '/app/data/ingredients.json'
+            
+            if not os.path.exists(data_path):
+                self.stdout.write(
+                    self.style.ERROR(
+                        f'Файл не найден: {data_path}'
+                    )
+                )
+                return
 
             with open(data_path, 'r', encoding='utf-8') as file:
                 ingredients = json.load(file)
