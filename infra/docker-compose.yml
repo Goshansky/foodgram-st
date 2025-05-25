@@ -12,11 +12,13 @@ services:
 
   backend:
     container_name: foodgram-backend
-    image: username/foodgram-backend:latest
+    build: ../backend
+#    image: goshansky/foodgram-backend:latest
     restart: always
     volumes:
       - static_value:/app/static/
       - media_value:/app/media/
+      - ../data/:/app/data/
     depends_on:
       - db
     env_file:

@@ -9,11 +9,6 @@ class User(AbstractUser):
         unique=True,
         verbose_name='Электронная почта'
     )
-    username = models.CharField(
-        max_length=150,
-        unique=True,
-        verbose_name='Имя пользователя'
-    )
     first_name = models.CharField(
         max_length=150,
         verbose_name='Имя'
@@ -21,10 +16,6 @@ class User(AbstractUser):
     last_name = models.CharField(
         max_length=150,
         verbose_name='Фамилия'
-    )
-    password = models.CharField(
-        max_length=150,
-        verbose_name='Пароль'
     )
     avatar = models.ImageField(
         upload_to='avatars/',
