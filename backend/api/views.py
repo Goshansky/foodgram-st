@@ -37,6 +37,22 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = IngredientFilter
     pagination_class = None
+    
+    def list(self, request, *args, **kwargs):
+        """Получение списка ингредиентов с фильтрацией по имени."""
+        name_param = request.query_params.get('name')
+        if name_param:
+            # Получаем все ингредиенты и фильтруем их в Python
+            # для гарантии точного соответствия начала имени
+            queryset = []
+            for ingredient in self.get_queryset():
+                # Проверяем точное соответствие начала строки (с учетом регистра)
+                if ingredient.name.startswith(name_param):
+                    queryset.append(ingredient)
+                    
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+        return super().list(request, *args, **kwargs)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -57,6 +73,23 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Создание рецепта с указанием автора."""
         serializer.save(author=self.request.user)
+
+    @action(
+        detail=True,
+        methods=['get'],
+        permission_classes=[AllowAny],
+        url_path='get-link'
+    )
+    def get_link(self, request, pk=None):
+        """Получение короткой ссылки на рецепт."""
+        try:
+            recipe = get_object_or_404(Recipe, pk=pk)
+            return Response({'short-link': f'/recipes/{recipe.id}/'})
+        except ValueError:
+            return Response(
+                {'errors': 'Неверный формат идентификатора рецепта'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
     @action(
         detail=True,
@@ -186,14 +219,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         return response
 
-
+    def update(self, request, *args, **kwargs):
+        """Обновление рецепта."""
+        instance = self.get_object()
+        
+        # Проверяем, что это PATCH запрос без поля ingredients
+        if request.method == 'PATCH' and 'ingredients' not in request.data:
+            # Возвращаем ошибку 400
+            return Response(
+                {'ingredients': ['Обязательное поле.']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        return super().update(request, *args, **kwargs)
 
 
 class UserViewSet(viewsets.ModelViewSet):
     """Представление для пользователей."""
     queryset = User.objects.all()
     pagination_class = CustomPagination
-    http_method_names = ['get', 'post', 'delete']
+    http_method_names = ['get', 'post', 'delete', 'put']
     
     def get_serializer_class(self):
         """Выбор сериализатора в зависимости от действия."""
@@ -287,11 +332,14 @@ class UserViewSet(viewsets.ModelViewSet):
         try:
             author = get_object_or_404(User, pk=pk)
             user = request.user
-            subscription = get_object_or_404(
-                Subscription, 
-                user=user, 
-                author=author
-            )
+            subscription = Subscription.objects.filter(user=user, author=author)
+            
+            if not subscription.exists():
+                return Response(
+                    {'errors': 'Вы не подписаны на этого пользователя'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
             subscription.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except ValueError:
@@ -308,6 +356,12 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def me_avatar(self, request):
         """Установка аватара пользователя."""
+        if 'avatar' not in request.data:
+            return Response(
+                {'avatar': ['Обязательное поле.']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
         serializer = SetAvatarSerializer(
             request.user,
             data=request.data,

@@ -190,6 +190,24 @@ class RecipeListSerializer(serializers.ModelSerializer):
         return ShoppingCart.objects.filter(
             user=user, recipe=obj
         ).exists()
+        
+    def to_representation(self, instance):
+        """Представление рецепта."""
+        representation = super().to_representation(instance)
+        
+        # Проверяем, является ли это деталями рецепта или списком
+        view = self.context.get('request').parser_context.get('view')
+        if view and view.action == 'retrieve':
+            # Если это детали рецепта, удаляем поле tags
+            if 'tags' in representation:
+                representation.pop('tags')
+        
+        # Если это список рецептов, всегда удаляем поле tags
+        if isinstance(self.root.instance, list) or (view and view.action == 'list'):
+            if 'tags' in representation:
+                representation.pop('tags')
+                    
+        return representation
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
@@ -270,6 +288,14 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             ingredients_data = validated_data.pop('ingredients')
             instance.recipe_ingredients.all().delete()
             self._create_recipe_ingredients(instance, ingredients_data)
+        elif self.partial:
+            # Если это частичное обновление и поле ingredients отсутствует, не трогаем ингредиенты
+            pass
+        else:
+            # Если это полное обновление и поле ingredients отсутствует, возвращаем ошибку
+            raise serializers.ValidationError(
+                {'ingredients': ['Обязательное поле.']}
+            )
         
         # Обновление остальных полей
         for attr, value in validated_data.items():
@@ -293,10 +319,16 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         """Представление рецепта после создания/обновления."""
-        return RecipeListSerializer(
+        representation = RecipeListSerializer(
             instance,
             context=self.context
         ).data
+        
+        # Убираем поле tags, так как оно не ожидается в схеме ответа
+        if 'tags' in representation:
+            representation.pop('tags')
+            
+        return representation
 
 
 class RecipeMinifiedSerializer(serializers.ModelSerializer):
