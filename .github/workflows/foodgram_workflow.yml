@@ -122,7 +122,7 @@ jobs:
       - name: Push to DockerHub
         uses: docker/build-push-action@v5
         with:
-          context: ./nginx/
+          context: ./infra/
           push: true
           # Тут вместо username должен быть ваш логин на Docker Hub
           tags: goshansky/foodgram_gateway:latest
