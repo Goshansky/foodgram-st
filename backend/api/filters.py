@@ -5,32 +5,30 @@ from recipes.models import Ingredient, Recipe, Tag
 
 class IngredientFilter(FilterSet):
     """Фильтр для ингредиентов по имени."""
-    name = filters.CharFilter(field_name='name', lookup_expr='istartswith')
+
+    name = filters.CharFilter(field_name="name", lookup_expr="istartswith")
 
     class Meta:
         model = Ingredient
-        fields = ('name',)
+        fields = ("name",)
 
 
 class RecipeFilter(FilterSet):
     """Фильтр для рецептов."""
+
     tags = filters.ModelMultipleChoiceFilter(
-        field_name='tags__slug',
-        to_field_name='slug',
-        queryset=Tag.objects.all()
+        field_name="tags__slug", to_field_name="slug", queryset=Tag.objects.all()
     )
-    is_favorited = filters.BooleanFilter(method='filter_is_favorited')
-    is_in_shopping_cart = filters.BooleanFilter(
-        method='filter_is_in_shopping_cart'
-    )
+    is_favorited = filters.BooleanFilter(method="filter_is_favorited")
+    is_in_shopping_cart = filters.BooleanFilter(method="filter_is_in_shopping_cart")
 
     class Meta:
         model = Recipe
-        fields = ('tags', 'author', 'is_favorited', 'is_in_shopping_cart')
+        fields = ("tags", "author", "is_favorited", "is_in_shopping_cart")
 
     def filter_is_favorited(self, queryset, name, value):
         """Фильтрация по нахождению в избранном."""
-        if not self.request or not hasattr(self.request, 'user'):
+        if not self.request or not hasattr(self.request, "user"):
             return queryset
         user = self.request.user
         if value and user.is_authenticated:
@@ -39,9 +37,9 @@ class RecipeFilter(FilterSet):
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
         """Фильтрация по нахождению в списке покупок."""
-        if not self.request or not hasattr(self.request, 'user'):
+        if not self.request or not hasattr(self.request, "user"):
             return queryset
         user = self.request.user
         if value and user.is_authenticated:
             return queryset.filter(shopping_cart__user=user)
-        return queryset 
+        return queryset
