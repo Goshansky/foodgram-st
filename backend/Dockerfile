@@ -2,24 +2,32 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
+# Копируем файл зависимостей
 COPY requirements.txt .
 
+# Устанавливаем зависимости
 RUN pip3 install --no-cache-dir -r requirements.txt \
     && apt-get update \
     && apt-get install -y netcat-openbsd
 
-COPY . .
+# Копируем конфигурационные файлы проекта
+COPY ./foodgram ./foodgram/
+COPY ./manage.py .
 
-# Создание директорий для миграций, если их нет
-RUN mkdir -p /app/recipes/migrations /app/users/migrations /app/api/migrations \
-    && touch /app/recipes/migrations/__init__.py \
-    && touch /app/users/migrations/__init__.py \
-    && touch /app/api/migrations/__init__.py
+# Создаем директории для приложений и их миграций
+RUN mkdir -p recipes users api \
+    && mkdir -p recipes/migrations users/migrations api/migrations \
+    && touch recipes/migrations/__init__.py \
+    && touch users/migrations/__init__.py \
+    && touch api/migrations/__init__.py
 
-# Генерация миграций
-RUN python manage.py makemigrations users recipes
+# Копируем код приложений
+COPY ./recipes ./recipes/
+COPY ./users ./users/
+COPY ./api ./api/
 
-# Установка прав на выполнение скрипта
+# Копируем скрипт запуска
+COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
 ENTRYPOINT ["/bin/sh", "entrypoint.sh"] 

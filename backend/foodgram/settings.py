@@ -150,4 +150,5 @@ DJOSER = {
         'user': ['rest_framework.permissions.IsAuthenticated'],
         'user_list': ['rest_framework.permissions.AllowAny'],
     },
+    'SET_PASSWORD_RETYPE': False,
 } 

@@ -5,7 +5,7 @@ from recipes.models import Ingredient, Recipe, Tag
 
 class IngredientFilter(FilterSet):
     """Фильтр для ингредиентов по имени."""
-    name = filters.CharFilter(lookup_expr='istartswith')
+    name = filters.CharFilter(field_name='name', lookup_expr='istartswith')
 
     class Meta:
         model = Ingredient
@@ -30,6 +30,8 @@ class RecipeFilter(FilterSet):
 
     def filter_is_favorited(self, queryset, name, value):
         """Фильтрация по нахождению в избранном."""
+        if not self.request or not hasattr(self.request, 'user'):
+            return queryset
         user = self.request.user
         if value and user.is_authenticated:
             return queryset.filter(favorites__user=user)
@@ -37,6 +39,8 @@ class RecipeFilter(FilterSet):
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
         """Фильтрация по нахождению в списке покупок."""
+        if not self.request or not hasattr(self.request, 'user'):
+            return queryset
         user = self.request.user
         if value and user.is_authenticated:
             return queryset.filter(shopping_cart__user=user)

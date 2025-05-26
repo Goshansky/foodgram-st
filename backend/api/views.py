@@ -46,12 +46,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_serializer_class(self):
         """Выбор сериализатора в зависимости от действия."""
         if self.action in ('create', 'update', 'partial_update'):
             return RecipeCreateSerializer
         return RecipeListSerializer
+        
+    def perform_create(self, serializer):
+        """Создание рецепта с указанием автора."""
+        serializer.save(author=self.request.user)
 
     @action(
         detail=True,
@@ -60,16 +65,46 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def favorite(self, request, pk=None):
         """Добавление рецепта в избранное."""
-        return self._add_to_list(
-            request, pk, FavoriteSerializer, 'recipe', 'user'
-        )
+        try:
+            recipe = get_object_or_404(Recipe, pk=pk)
+            user = request.user
+            
+            if Favorite.objects.filter(user=user, recipe=recipe).exists():
+                return Response(
+                    {'errors': 'Рецепт уже добавлен в избранное'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            favorite = Favorite.objects.create(user=user, recipe=recipe)
+            serializer = RecipeMinifiedSerializer(recipe)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except ValueError:
+            return Response(
+                {'errors': 'Неверный формат идентификатора рецепта'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
     @favorite.mapping.delete
     def delete_favorite(self, request, pk=None):
         """Удаление рецепта из избранного."""
-        return self._delete_from_list(
-            request, pk, Favorite, 'recipe', 'Рецепт удален из избранного'
-        )
+        try:
+            recipe = get_object_or_404(Recipe, pk=pk)
+            user = request.user
+            favorite = Favorite.objects.filter(user=user, recipe=recipe)
+            
+            if not favorite.exists():
+                return Response(
+                    {'errors': 'Рецепт не найден в избранном'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            favorite.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError:
+            return Response(
+                {'errors': 'Неверный формат идентификатора рецепта'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
     @action(
         detail=True,
@@ -78,17 +113,46 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def shopping_cart(self, request, pk=None):
         """Добавление рецепта в список покупок."""
-        return self._add_to_list(
-            request, pk, ShoppingCartSerializer, 'recipe', 'user'
-        )
+        try:
+            recipe = get_object_or_404(Recipe, pk=pk)
+            user = request.user
+            
+            if ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
+                return Response(
+                    {'errors': 'Рецепт уже добавлен в список покупок'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            shopping_cart = ShoppingCart.objects.create(user=user, recipe=recipe)
+            serializer = RecipeMinifiedSerializer(recipe)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except ValueError:
+            return Response(
+                {'errors': 'Неверный формат идентификатора рецепта'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, pk=None):
         """Удаление рецепта из списка покупок."""
-        return self._delete_from_list(
-            request, pk, ShoppingCart, 'recipe',
-            'Рецепт удален из списка покупок'
-        )
+        try:
+            recipe = get_object_or_404(Recipe, pk=pk)
+            user = request.user
+            shopping_cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
+            
+            if not shopping_cart.exists():
+                return Response(
+                    {'errors': 'Рецепт не найден в списке покупок'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            shopping_cart.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError:
+            return Response(
+                {'errors': 'Неверный формат идентификатора рецепта'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
     @action(
         detail=False,
@@ -122,51 +186,30 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         return response
 
-    def _add_to_list(self, request, pk, serializer_class,
-                    obj_field, user_field):
-        """Общий метод для добавления рецепта в список."""
-        recipe = get_object_or_404(Recipe, pk=pk)
-        data = {
-            obj_field: recipe.id,
-            user_field: request.user.id
-        }
-        serializer = serializer_class(
-            data=data,
-            context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def _delete_from_list(self, request, pk, model, obj_field, message):
-        """Общий метод для удаления рецепта из списка."""
-        recipe = get_object_or_404(Recipe, pk=pk)
-        obj = model.objects.filter(
-            **{obj_field: recipe, 'user': request.user}
-        )
-        if obj.exists():
-            obj.delete()
-            return Response(
-                {'detail': message},
-                status=status.HTTP_204_NO_CONTENT
-            )
-        return Response(
-            {'errors': 'Рецепт не найден в списке'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
 
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    """Представление для пользователей.
-    
-    Доступно по URL /api/profiles/
-    Предоставляет методы для работы с профилем пользователя
-    и операции подписки/отписки.
-    """
+
+class UserViewSet(viewsets.ModelViewSet):
+    """Представление для пользователей."""
     queryset = User.objects.all()
-    serializer_class = CustomUserSerializer
     pagination_class = CustomPagination
-    permission_classes = (AllowAny,)
+    http_method_names = ['get', 'post', 'delete']
+    
+    def get_serializer_class(self):
+        """Выбор сериализатора в зависимости от действия."""
+        if self.action == 'create':
+            # Используем сериализатор из djoser для создания пользователя
+            from djoser.serializers import UserCreateSerializer
+            return UserCreateSerializer
+        return CustomUserSerializer
+    
+    def get_permissions(self):
+        """Определение прав доступа для различных действий."""
+        if self.action == 'create':
+            return [AllowAny()]
+        if self.action in ['me', 'me_avatar', 'delete_avatar', 'subscriptions', 'subscribe', 'unsubscribe', 'set_password']:
+            return [IsAuthenticated()]
+        return [AllowAny()]
 
     @action(
         detail=False,
@@ -175,7 +218,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     )
     def me(self, request):
         """Получение информации о текущем пользователе."""
-        serializer = self.get_serializer(request.user)
+        serializer = CustomUserSerializer(request.user, context={'request': request})
         return Response(serializer.data)
 
     @action(
@@ -185,14 +228,23 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     )
     def subscriptions(self, request):
         """Получение списка подписок пользователя."""
-        queryset = User.objects.filter(following__user=request.user)
-        page = self.paginate_queryset(queryset)
+        subscriptions = User.objects.filter(following__user=request.user)
+        page = self.paginate_queryset(subscriptions)
+        
+        if page is not None:
+            serializer = UserWithRecipesSerializer(
+                page, 
+                many=True, 
+                context={'request': request}
+            )
+            return self.get_paginated_response(serializer.data)
+        
         serializer = UserWithRecipesSerializer(
-            page,
-            many=True,
+            subscriptions, 
+            many=True, 
             context={'request': request}
         )
-        return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
 
     @action(
         detail=True,
@@ -201,68 +253,109 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     )
     def subscribe(self, request, pk=None):
         """Подписка на пользователя."""
-        author = get_object_or_404(User, pk=pk)
-        user = request.user
-
-        if user == author:
-            return Response(
-                {'errors': 'Нельзя подписаться на самого себя'},
-                status=status.HTTP_400_BAD_REQUEST
+        try:
+            author = get_object_or_404(User, pk=pk)
+            user = request.user
+            
+            if user == author:
+                return Response(
+                    {'errors': 'Нельзя подписаться на самого себя'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if Subscription.objects.filter(user=user, author=author).exists():
+                return Response(
+                    {'errors': 'Вы уже подписаны на этого пользователя'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            Subscription.objects.create(user=user, author=author)
+            serializer = UserWithRecipesSerializer(
+                author, 
+                context={'request': request}
             )
-
-        if Subscription.objects.filter(user=user, author=author).exists():
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except ValueError:
             return Response(
-                {'errors': 'Вы уже подписаны на этого пользователя'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'errors': 'Неверный формат идентификатора пользователя'},
+                status=status.HTTP_404_NOT_FOUND
             )
-
-        Subscription.objects.create(user=user, author=author)
-        serializer = UserWithRecipesSerializer(
-            author,
-            context={'request': request}
-        )
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
     def unsubscribe(self, request, pk=None):
         """Отписка от пользователя."""
-        author = get_object_or_404(User, pk=pk)
-        user = request.user
-        subscription = Subscription.objects.filter(user=user, author=author)
-
-        if not subscription.exists():
-            return Response(
-                {'errors': 'Вы не подписаны на этого пользователя'},
-                status=status.HTTP_400_BAD_REQUEST
+        try:
+            author = get_object_or_404(User, pk=pk)
+            user = request.user
+            subscription = get_object_or_404(
+                Subscription, 
+                user=user, 
+                author=author
             )
-
-        subscription.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+            subscription.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError:
+            return Response(
+                {'errors': 'Неверный формат идентификатора пользователя'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
     @action(
         detail=False,
-        methods=['put'],
-        permission_classes=[IsAuthenticated]
+        methods=['put', 'post'],
+        permission_classes=[IsAuthenticated],
+        url_path='me/avatar'
     )
     def me_avatar(self, request):
-        """Добавление аватара текущему пользователю."""
+        """Установка аватара пользователя."""
         serializer = SetAvatarSerializer(
             request.user,
             data=request.data,
             partial=True
         )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        if serializer.is_valid():
+            serializer.save()
+            response_serializer = SetAvatarResponseSerializer(request.user)
+            return Response(response_serializer.data)
         return Response(
-            SetAvatarResponseSerializer(request.user).data,
-            status=status.HTTP_200_OK
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
         )
 
     @me_avatar.mapping.delete
     def delete_avatar(self, request):
-        """Удаление аватара текущего пользователя."""
+        """Удаление аватара пользователя."""
         user = request.user
         if user.avatar:
             user.avatar.delete()
+            user.avatar = None
             user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(
+        detail=False,
+        methods=['post'],
+        permission_classes=[IsAuthenticated],
+        url_path='set_password'
+    )
+    def set_password(self, request):
+        """Изменение пароля пользователя."""
+        user = request.user
+        current_password = request.data.get('current_password')
+        new_password = request.data.get('new_password')
+        
+        if not current_password or not new_password:
+            return Response(
+                {'errors': 'Необходимо указать текущий и новый пароль'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not user.check_password(current_password):
+            return Response(
+                {'current_password': ['Неправильный пароль']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user.set_password(new_password)
+        user.save()
         return Response(status=status.HTTP_204_NO_CONTENT) 

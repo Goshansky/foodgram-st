@@ -10,6 +10,12 @@ echo "PostgreSQL started"
 # Создание директории для данных, если она не существует
 mkdir -p /app/data
 
+# Создание миграций для всех приложений
+echo "Creating migrations..."
+python manage.py makemigrations users
+python manage.py makemigrations recipes
+python manage.py makemigrations api
+
 # Выполнение миграций для всех приложений
 echo "Applying migrations..."
 python manage.py migrate
