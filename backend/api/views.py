@@ -7,14 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from recipes.models import (
-    Favorite,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    ShoppingCart,
-    Tag,
-)
+from recipes.models import Favorite, Ingredient, Recipe, RecipeIngredient, ShoppingCart
 from users.models import Subscription, User
 from .filters import IngredientFilter, RecipeFilter
 from .pagination import CustomPagination
@@ -27,17 +20,8 @@ from .serializers import (
     RecipeMinifiedSerializer,
     SetAvatarSerializer,
     SetAvatarResponseSerializer,
-    TagSerializer,
     UserWithRecipesSerializer,
 )
-
-
-class TagViewSet(viewsets.ReadOnlyModelViewSet):
-
-    queryset = Tag.objects.all()
-    serializer_class = TagSerializer
-    permission_classes = (AllowAny,)
-    pagination_class = None
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -178,22 +162,28 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def download_shopping_cart(self, request):
+        user = request.user
         ingredients = (
-            RecipeIngredient.objects.filter(recipe__shopping_cart__user=request.user)
+            RecipeIngredient.objects.filter(recipe__shopping_cart__user=user)
             .values("ingredient__name", "ingredient__measurement_unit")
             .annotate(total_amount=Sum("amount"))
             .order_by("ingredient__name")
         )
 
-        shopping_list = "Список покупок:\n\n"
-        for item in ingredients:
-            shopping_list += (
-                f"- {item['ingredient__name']} "
-                f"({item['ingredient__measurement_unit']}) — "
-                f"{item['total_amount']}\n"
-            )
-
-        response = HttpResponse(shopping_list, content_type="text/plain; charset=utf-8")
+        shopping_list = []
+        shopping_list.append("============= СПИСОК ПОКУПОК =============")
+        shopping_list.append("")
+        
+        for index, item in enumerate(ingredients, start=1):
+            name = item["ingredient__name"]
+            unit = item["ingredient__measurement_unit"]
+            amount = item["total_amount"]
+            shopping_list.append(f"{index}. {name} ({unit}) — {amount}")
+        
+        shopping_list.append("")
+        shopping_list.append("========= ПРИЯТНОГО ПРИГОТОВЛЕНИЯ! =========")
+        
+        response = HttpResponse("\n".join(shopping_list), content_type="text/plain; charset=utf-8")
         response["Content-Disposition"] = 'attachment; filename="shopping_list.txt"'
         return response
 

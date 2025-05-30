@@ -1,7 +1,7 @@
 import random
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from recipes.models import Tag, Recipe, Ingredient, RecipeIngredient
+from recipes.models import Ingredient, Recipe, RecipeIngredient
 
 User = get_user_model()
 
@@ -10,22 +10,6 @@ class Command(BaseCommand):
     help = "Создает тестовые данные для проекта"
 
     def handle(self, *args, **options):
-        tags_data = [
-            {"name": "Завтрак", "color": "#E26C2D", "slug": "breakfast"},
-            {"name": "Обед", "color": "#49B64E", "slug": "lunch"},
-            {"name": "Ужин", "color": "#8775D2", "slug": "dinner"},
-            {"name": "Десерт", "color": "#FF0000", "slug": "dessert"},
-            {"name": "Вегетарианское", "color": "#00FF00", "slug": "vegetarian"},
-        ]
-
-        for tag_data in tags_data:
-            Tag.objects.get_or_create(
-                slug=tag_data["slug"],
-                defaults={"name": tag_data["name"], "color": tag_data["color"]},
-            )
-
-        self.stdout.write(self.style.SUCCESS("Теги созданы успешно"))
-
         users_data = [
             {
                 "username": "admin",
@@ -79,7 +63,6 @@ class Command(BaseCommand):
             return
 
         if users_for_recipes and Ingredient.objects.exists():
-            tags = list(Tag.objects.all())
             ingredients = list(Ingredient.objects.all())
 
             recipes_data = [
@@ -126,9 +109,6 @@ class Command(BaseCommand):
                         cooking_time=recipe_data["cooking_time"],
                         image="recipes/images/default_recipe.png",
                     )
-
-                    recipe_tags = random.sample(tags, k=random.randint(1, len(tags)))
-                    recipe.tags.set(recipe_tags)
 
                     for ingredient_data in recipe_data["ingredients"]:
                         RecipeIngredient.objects.create(

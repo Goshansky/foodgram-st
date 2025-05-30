@@ -20,6 +20,10 @@ class User(AbstractUser):
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
         ordering = ["id"]
+        indexes = [
+            models.Index(fields=["email"]),
+            models.Index(fields=["username"]),
+        ]
 
     def __str__(self):
         return self.username
@@ -48,6 +52,10 @@ class Subscription(models.Model):
                 check=~models.Q(user=models.F("author")),
                 name="prevent_self_subscription",
             ),
+        ]
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["author"]),
         ]
 
     def __str__(self):
