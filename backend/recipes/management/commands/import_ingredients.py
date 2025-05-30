@@ -11,7 +11,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            # Точный путь к файлу в контейнере
             data_path = "/app/data/ingredients.json"
 
             if not os.path.exists(data_path):

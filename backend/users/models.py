@@ -3,7 +3,6 @@ from django.db import models
 
 
 class User(AbstractUser):
-    """Модель пользователя."""
 
     email = models.EmailField(
         max_length=254, unique=True, verbose_name="Электронная почта"
@@ -27,7 +26,6 @@ class User(AbstractUser):
 
 
 class Subscription(models.Model):
-    """Модель подписки на автора."""
 
     user = models.ForeignKey(
         User,

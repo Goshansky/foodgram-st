@@ -33,7 +33,6 @@ from .serializers import (
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
-    """Представление для тегов."""
 
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
@@ -42,7 +41,6 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
-    """Представление для ингредиентов."""
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
@@ -52,14 +50,10 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
     def list(self, request, *args, **kwargs):
-        """Получение списка ингредиентов с фильтрацией по имени."""
         name_param = request.query_params.get("name")
         if name_param:
-            # Получаем все ингредиенты и фильтруем их в Python
-            # для гарантии точного соответствия начала имени
             queryset = []
             for ingredient in self.get_queryset():
-                # Проверяем точное соответствие начала строки (с учетом регистра)
                 if ingredient.name.startswith(name_param):
                     queryset.append(ingredient)
 
@@ -69,7 +63,6 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    """Представление для рецептов."""
 
     queryset = Recipe.objects.all()
     permission_classes = (IsAuthorOrReadOnly,)
@@ -79,20 +72,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete"]
 
     def get_serializer_class(self):
-        """Выбор сериализатора в зависимости от действия."""
         if self.action in ("create", "update", "partial_update"):
             return RecipeCreateSerializer
         return RecipeListSerializer
 
     def perform_create(self, serializer):
-        """Создание рецепта с указанием автора."""
         serializer.save(author=self.request.user)
 
     @action(
         detail=True, methods=["get"], permission_classes=[AllowAny], url_path="get-link"
     )
     def get_link(self, request, pk=None):
-        """Получение короткой ссылки на рецепт."""
         try:
             recipe = get_object_or_404(Recipe, pk=pk)
             return Response({"short-link": f"/recipes/{recipe.id}/"})
@@ -104,7 +94,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def favorite(self, request, pk=None):
-        """Добавление рецепта в избранное."""
         try:
             recipe = get_object_or_404(Recipe, pk=pk)
             user = request.user
@@ -126,7 +115,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @favorite.mapping.delete
     def delete_favorite(self, request, pk=None):
-        """Удаление рецепта из избранного."""
         try:
             recipe = get_object_or_404(Recipe, pk=pk)
             user = request.user
@@ -148,7 +136,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def shopping_cart(self, request, pk=None):
-        """Добавление рецепта в список покупок."""
         try:
             recipe = get_object_or_404(Recipe, pk=pk)
             user = request.user
@@ -170,7 +157,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, pk=None):
-        """Удаление рецепта из списка покупок."""
         try:
             recipe = get_object_or_404(Recipe, pk=pk)
             user = request.user
@@ -192,7 +178,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def download_shopping_cart(self, request):
-        """Скачивание списка покупок."""
         ingredients = (
             RecipeIngredient.objects.filter(recipe__shopping_cart__user=request.user)
             .values("ingredient__name", "ingredient__measurement_unit")
@@ -213,12 +198,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return response
 
     def update(self, request, *args, **kwargs):
-        """Обновление рецепта."""
         self.get_object()
 
-        # Проверяем, что это PATCH запрос без поля ingredients
         if request.method == "PATCH" and "ingredients" not in request.data:
-            # Возвращаем ошибку 400
             return Response(
                 {"ingredients": ["Обязательное поле."]},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -228,23 +210,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    """Представление для пользователей."""
 
     queryset = User.objects.all()
     pagination_class = CustomPagination
     http_method_names = ["get", "post", "delete", "put"]
 
     def get_serializer_class(self):
-        """Выбор сериализатора в зависимости от действия."""
         if self.action == "create":
-            # Используем сериализатор из djoser для создания пользователя
             from djoser.serializers import UserCreateSerializer
 
             return UserCreateSerializer
         return CustomUserSerializer
 
     def get_permissions(self):
-        """Определение прав доступа для различных действий."""
         if self.action == "create":
             return [AllowAny()]
         if self.action in [
@@ -261,13 +239,11 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def me(self, request):
-        """Получение информации о текущем пользователе."""
         serializer = CustomUserSerializer(request.user, context={"request": request})
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def subscriptions(self, request):
-        """Получение списка подписок пользователя."""
         subscriptions = User.objects.filter(following__user=request.user)
         page = self.paginate_queryset(subscriptions)
 
@@ -284,7 +260,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def subscribe(self, request, pk=None):
-        """Подписка на пользователя."""
         try:
             author = get_object_or_404(User, pk=pk)
             user = request.user
@@ -312,7 +287,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @subscribe.mapping.delete
     def unsubscribe(self, request, pk=None):
-        """Отписка от пользователя."""
         try:
             author = get_object_or_404(User, pk=pk)
             user = request.user
@@ -339,7 +313,6 @@ class UserViewSet(viewsets.ModelViewSet):
         url_path="me/avatar",
     )
     def me_avatar(self, request):
-        """Установка аватара пользователя."""
         if "avatar" not in request.data:
             return Response(
                 {"avatar": ["Обязательное поле."]}, status=status.HTTP_400_BAD_REQUEST
@@ -354,7 +327,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @me_avatar.mapping.delete
     def delete_avatar(self, request):
-        """Удаление аватара пользователя."""
         user = request.user
         if user.avatar:
             user.avatar.delete()
@@ -369,7 +341,6 @@ class UserViewSet(viewsets.ModelViewSet):
         url_path="set_password",
     )
     def set_password(self, request):
-        """Изменение пароля пользователя."""
         user = request.user
         current_password = request.data.get("current_password")
         new_password = request.data.get("new_password")

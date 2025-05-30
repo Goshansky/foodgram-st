@@ -4,7 +4,6 @@ from recipes.models import Ingredient, Recipe, Tag
 
 
 class IngredientFilter(FilterSet):
-    """Фильтр для ингредиентов по имени."""
 
     name = filters.CharFilter(field_name="name", lookup_expr="istartswith")
 
@@ -14,7 +13,6 @@ class IngredientFilter(FilterSet):
 
 
 class RecipeFilter(FilterSet):
-    """Фильтр для рецептов."""
 
     tags = filters.ModelMultipleChoiceFilter(
         field_name="tags__slug", to_field_name="slug", queryset=Tag.objects.all()
@@ -27,7 +25,6 @@ class RecipeFilter(FilterSet):
         fields = ("tags", "author", "is_favorited", "is_in_shopping_cart")
 
     def filter_is_favorited(self, queryset, name, value):
-        """Фильтрация по нахождению в избранном."""
         if not self.request or not hasattr(self.request, "user"):
             return queryset
         user = self.request.user
@@ -36,7 +33,6 @@ class RecipeFilter(FilterSet):
         return queryset
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
-        """Фильтрация по нахождению в списке покупок."""
         if not self.request or not hasattr(self.request, "user"):
             return queryset
         user = self.request.user

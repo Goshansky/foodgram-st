@@ -8,21 +8,15 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    # Блок services аналогичен docker-compose.yml
     services:
       postgres:
         image: postgres:13
-        # Указываем имя тестовой базы, имя и пароль пользователя в открытом виде,
-        # ведь эта база будет работать только во время прогона тестов
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres_password
           POSTGRES_DB: postgres
         ports:
           - 5432:5432
-        # Эта конструкция описывает проверку готовности сервиса postgres
-        # Если её не будет, то тесты могут запуститься раньше, чем сервер PostgreSQL
-        # В результате тесты опять решат, что базы нет, — и упадут
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
     - name: Check out code
@@ -37,16 +31,12 @@ jobs:
         python -m pip install --upgrade pip 
         pip install ruff==0.8.0
         pip install -r ./backend/requirements.txt
-    # Этот шаг дополним переменными для доступа к БД
     - name: Lint with ruff and run django tests
-      # Добавляем env-переменные для доступа к БД
       env:
         SECRET_KEY: django-insecure-p&l%385148kslhtyn^##a1)ilz@4zqj=rq&agdol^##zgl9(vs
         POSTGRES_USER: postgres
         POSTGRES_PASSWORD: postgres_password
         POSTGRES_DB: postgres
-        # Сервер БД запущен в Docker, но его порт проброшен на хост
-        # Поэтому подключаемся к 127.0.0.1:5432
         DB_HOST: 127.0.0.1
         DB_PORT: 5432
         DB_ENGINE: django.db.backends.postgresql
@@ -58,34 +48,19 @@ jobs:
     needs: tests
     steps:
       - name: Check out the repo
-        # Получение исходного кода из репозитория
         uses: actions/checkout@v4
       - name: Set up Docker Buildx
-        # Установка сборщика контейнеров Docker
         uses: docker/setup-buildx-action@v3
-      - name: Login to Docker 
-        # Авторизация на Docker Hub
+      - name: Login to Docker
         uses: docker/login-action@v3
-        # При помощи with передаём в action параметры username и password
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          # Хорошо ли держать логин и пароль прямо в коде workflow?
-          # Нет, это нехорошо
       - name: Push to DockerHub
-        # Одновременный билд и пуш образа в Docker Hub
         uses: docker/build-push-action@v5
         with:
-          # Параметр context: ./backend/ указывает, что нужный Dockerfile 
-          # находится в ./backend/
           context: ./backend/
-          # Параметр push: true указывает, что образ нужно не только собрать,
-          # но и отправить на Docker Hub
           push: true
-          # В параметре tags задаётся название и тег для образа.
-          # Для каждого пересобранного образа 
-          # устанавливаем тег latest, чтобы потом
-          # на сервере и в docker-compose.yml не указывать версию
           tags: goshansky/foodgram_backend:latest
   build_frontend_and_push_to_docker_hub:
     name: Push frontend Docker image to DockerHub
@@ -124,7 +99,6 @@ jobs:
         with:
           context: ./infra/
           push: true
-          # Тут вместо username должен быть ваш логин на Docker Hub
           tags: goshansky/foodgram_gateway:latest
   send_message:
     runs-on: ubuntu-latest

@@ -8,20 +8,14 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            # Путь к директории для изображений рецептов
             images_dir = os.path.join(settings.MEDIA_ROOT, "recipes", "images")
 
-            # Создаем директорию, если она не существует
             os.makedirs(images_dir, exist_ok=True)
 
-            # Путь к файлу изображения по умолчанию
             default_image_path = os.path.join(images_dir, "default_recipe.png")
 
-            # Проверяем, существует ли файл
             if not os.path.exists(default_image_path):
-                # Создаем простое изображение
                 with open(default_image_path, "wb") as f:
-                    # Минимальное изображение JPEG
                     f.write(
                         bytes(
                             [
