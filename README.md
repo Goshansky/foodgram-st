@@ -22,8 +22,8 @@ Foodgram - это веб-приложение, которое позволяет
 
 1. Клонируйте репозиторий:
 ```
-git clone https://github.com/username/foodgram-project.git
-cd foodgram-project
+git clone https://github.com/Goshansky/foodgram-st.git
+cd foodgram-st
 ```
 
 2. Запустите проект с помощью Docker Compose:
@@ -48,41 +48,21 @@ docker-compose exec backend python manage.py createsuperuser
 - API-документация: http://localhost/api/docs/
 - Админ-панель: http://localhost/admin/
 
-## Примеры API запросов
 
-### Получение списка рецептов
-```
-GET /api/recipes/
-```
+### CI/CD с GitHub Actions
+В проекте настроен полный цикл CI/CD через GitHub Actions:
+1. При каждом пуше в main или pull request запускаются автоматические тесты Django и React.
+2. После успешного прохождения тестов собираются Docker-образы:
+ - foodgram_backend
+ - foodgram_frontend
+ - foodgram_gateway (nginx)
+3. Готовые образы автоматически публикуются на DockerHub.
+4. После публикации отправляется уведомление в Telegram о статусе сборки и деплоя.
 
-### Получение конкретного рецепта
-```
-GET /api/recipes/{id}/
-```
+### Требуемые секреты GitHub
 
-### Создание рецепта (требуется аутентификация)
-```
-POST /api/recipes/
-{
-    "ingredients": [
-        {
-            "id": 1,
-            "amount": 10
-        }
-    ],
-    "tags": [
-        1,
-        2
-    ],
-    "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-    "name": "Название рецепта",
-    "text": "Описание рецепта",
-    "cooking_time": 5
-}
-```
-
-### Получение списка покупок (требуется аутентификация)
-```
-GET /api/recipes/download_shopping_cart/
-```
-
+Для работы CI/CD в репозитории необходимо добавить следующие секреты:
+- `DOCKER_USERNAME` - имя пользователя DockerHub
+- `DOCKER_PASSWORD` - пароль от DockerHub
+- `TELEGRAM_TO` - ID чата Telegram для уведомлений о сборке отзыва
+- `TELEGRAM_TOKEN` - токен бота Telegram
