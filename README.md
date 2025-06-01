@@ -26,26 +26,10 @@ git clone https://github.com/username/foodgram-project.git
 cd foodgram-project
 ```
 
-2. Создайте файл `.env` в директории `infra/` со следующим содержимым:
-```
-# PostgreSQL
-DB_ENGINE=django.db.backends.postgresql
-DB_NAME=postgres_foodgram
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres_password
-DB_HOST=db
-DB_PORT=5432
-
-# Django
-SECRET_KEY=your-secret-key-here
-DEBUG=False
-ALLOWED_HOSTS=127.0.0.1,localhost,backend
-```
-
-3. Запустите проект с помощью Docker Compose:
+2. Запустите проект с помощью Docker Compose:
 ```
 cd infra
-docker-compose up -d
+docker-compose up --build
 ```
 
 4. После запуска контейнеров выполните миграции и загрузите ингредиенты (если это не произошло автоматически):
