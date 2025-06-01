@@ -29,7 +29,7 @@ cd foodgram-project
 2. Запустите проект с помощью Docker Compose:
 ```
 cd infra
-docker-compose up --build
+docker-compose up --build -d
 ```
 
 3. После запуска контейнеров выполните миграции и загрузите ингредиенты (если это не произошло автоматически):
