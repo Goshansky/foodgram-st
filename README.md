@@ -32,18 +32,18 @@ cd infra
 docker-compose up --build
 ```
 
-4. После запуска контейнеров выполните миграции и загрузите ингредиенты (если это не произошло автоматически):
+3. После запуска контейнеров выполните миграции и загрузите ингредиенты (если это не произошло автоматически):
 ```
 docker-compose exec backend python manage.py migrate
 docker-compose exec backend python manage.py import_ingredients
 ```
 
-5. Создайте суперпользователя:
+4. Создайте суперпользователя:
 ```
 docker-compose exec backend python manage.py createsuperuser
 ```
 
-6. Доступ к проекту:
+5. Доступ к проекту:
 - Веб-интерфейс: http://localhost
 - API-документация: http://localhost/api/docs/
 - Админ-панель: http://localhost/admin/
