@@ -204,16 +204,10 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Нужно добавить хотя бы один ингредиент!")
         ingredient_ids = [item["id"].id for item in value]
         unique_ids = set(ingredient_ids)
-        
+
         if len(ingredient_ids) != len(unique_ids):
-            duplicates = [
-                id for id in unique_ids 
-                if ingredient_ids.count(id) > 1
-            ]
-            duplicate_names = [
-                Ingredient.objects.get(id=id).name 
-                for id in duplicates
-            ]
+            duplicates = [id for id in unique_ids if ingredient_ids.count(id) > 1]
+            duplicate_names = [Ingredient.objects.get(id=id).name for id in duplicates]
             raise serializers.ValidationError(
                 f"Ингредиенты не должны повторяться! "
                 f"Повторяются: {', '.join(duplicate_names)}"
@@ -225,7 +219,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     f"Количество ингредиента '{ingredient.name}' должно быть не меньше 1!"
                 )
-        
+
         return value
 
     def validate_cooking_time(self, value):

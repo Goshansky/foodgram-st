@@ -4,10 +4,7 @@ from recipes.models import Ingredient, Recipe
 
 
 class IngredientFilter(FilterSet):
-    name = filters.CharFilter(
-        field_name="name", 
-        lookup_expr="istartswith"
-    )
+    name = filters.CharFilter(field_name="name", lookup_expr="istartswith")
 
     class Meta:
         model = Ingredient
@@ -34,7 +31,7 @@ class RecipeFilter(FilterSet):
         if not user or not value:
             return queryset
         return queryset.filter(shopping_cart__user=user)
-    
+
     def _get_user(self):
         if not self.request or not hasattr(self.request, "user"):
             return None

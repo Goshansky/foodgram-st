@@ -173,17 +173,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
         shopping_list = []
         shopping_list.append("============= СПИСОК ПОКУПОК =============")
         shopping_list.append("")
-        
+
         for index, item in enumerate(ingredients, start=1):
             name = item["ingredient__name"]
             unit = item["ingredient__measurement_unit"]
             amount = item["total_amount"]
             shopping_list.append(f"{index}. {name} ({unit}) — {amount}")
-        
+
         shopping_list.append("")
         shopping_list.append("========= ПРИЯТНОГО ПРИГОТОВЛЕНИЯ! =========")
-        
-        response = HttpResponse("\n".join(shopping_list), content_type="text/plain; charset=utf-8")
+
+        response = HttpResponse(
+            "\n".join(shopping_list), content_type="text/plain; charset=utf-8"
+        )
         response["Content-Disposition"] = 'attachment; filename="shopping_list.txt"'
         return response
 
