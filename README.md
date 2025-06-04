@@ -55,9 +55,9 @@ docker-compose exec backend_goshansky python manage.py createsuperuser
 В проекте настроен полный цикл CI/CD через GitHub Actions:
 1. При каждом пуше в main или pull request запускаются автоматические тесты Django и React.
 2. После успешного прохождения тестов собираются Docker-образы:
- - foodgram_backend
- - foodgram_frontend
- - foodgram_gateway (nginx)
+ - foodgram_backend-goshansky
+ - foodgram_frontend-goshansky
+ - foodgram-proxy-goshansky (nginx)
 3. Готовые образы автоматически публикуются на DockerHub.
 4. После публикации отправляется уведомление в Telegram о статусе сборки и деплоя.
 
