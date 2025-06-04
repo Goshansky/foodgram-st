@@ -1,39 +1,39 @@
 version: '3.3'
 services:
 
-  db:
-    container_name: foodgram-db
+  db-goshansky:
+    container_name: foodgram-db-goshansky
     image: postgres:13.0-alpine
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - postgres_data_goshansky:/var/lib/postgresql/data/
     env_file:
       - ./.env
     restart: always
 
-  backend:
-    container_name: foodgram-backend
+  backend_goshansky:
+    container_name: foodgram-backend-goshansky
     build: ../backend
 #    image: goshansky/foodgram-backend:latest
     restart: always
     volumes:
-      - static_value:/app/static/
-      - media_value:/app/media/
+      - static_value_goshansky:/app/static/
+      - media_value_goshansky:/app/media/
       - ../data/:/app/data/
     depends_on:
-      - db
+      - db-goshansky
     env_file:
       - ./.env
 
-  frontend:
-    container_name: foodgram-front
+  frontend_goshansky:
+    container_name: foodgram-frontend-goshansky
     build: ../frontend
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
-      - backend
+      - backend_goshansky
 
-  nginx:
-    container_name: foodgram-proxy
+  nginx_goshansky:
+    container_name: foodgram-proxy-goshansky
     image: nginx:1.25.4-alpine
     ports:
       - "80:80"
@@ -41,13 +41,13 @@ services:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ../frontend/build:/usr/share/nginx/html/
       - ../docs/:/usr/share/nginx/html/api/docs/
-      - static_value:/var/html/static/
-      - media_value:/var/html/media/
+      - static_value_goshansky:/var/html/static/
+      - media_value_goshansky:/var/html/media/
     depends_on:
-      - frontend
+      - frontend_goshansky
     restart: always
 
 volumes:
-  postgres_data:
-  static_value:
-  media_value:
+  postgres_data_goshansky:
+  static_value_goshansky:
+  media_value_goshansky:

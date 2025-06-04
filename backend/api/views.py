@@ -69,7 +69,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_link(self, request, pk=None):
         try:
             recipe = get_object_or_404(Recipe, pk=pk)
-            return Response({"short-link": f"/recipes/{recipe.id}/"})
+            host = request.get_host()
+            protocol = "https" if request.is_secure() else "http"
+            return Response({"short-link": f"{protocol}://{host}/s/{recipe.id}"})
         except ValueError:
             return Response(
                 {"errors": "Неверный формат идентификатора рецепта"},

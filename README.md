@@ -18,14 +18,6 @@ Foodgram - это веб-приложение, которое позволяет
 ### Предварительные требования
 - Docker и Docker Compose
 
-# !!!!!!!!!!!!!!!!!!!!!!
-
-# Примечание!
-
-## Пожалуйста, посмотрите видео по запуску https://disk.yandex.ru/i/eQ9JoT0WzPI9Qw, на котором проект запускается и жду Ваши комментарии по коду.
-
-# !!!!!!!!!!!!!!!!!!!!!!
-
 ### Локальный запуск
 
 1. Клонируйте репозиторий:
@@ -40,15 +32,17 @@ cd infra
 docker-compose up --build -d
 ```
 
-3. После запуска контейнеров выполните миграции и загрузите ингредиенты (если это не произошло автоматически):
+3. После запуска контейнеров выполните миграции, загрузите ингредиенты, базовое изображение и тестовые данные:
 ```
-docker-compose exec backend python manage.py migrate
-docker-compose exec backend python manage.py import_ingredients
+docker-compose exec backend_goshansky python manage.py migrate
+docker-compose exec backend_goshansky python manage.py import_ingredients
+docker-compose exec backend_goshansky python manage.py create_default_image
+docker-compose exec backend_goshansky python manage.py create_test_data
 ```
 
 4. Создайте суперпользователя:
 ```
-docker-compose exec backend python manage.py createsuperuser
+docker-compose exec backend_goshansky python manage.py createsuperuser
 ```
 
 5. Доступ к проекту:

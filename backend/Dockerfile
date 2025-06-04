@@ -1,22 +1,15 @@
 FROM python:3.9-slim
 WORKDIR /app
+
+RUN pip install --upgrade pip && \
+    pip install gunicorn==20.1.0
+
 COPY requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt \
-    && apt-get update \
-    && apt-get install -y netcat-openbsd
 
-COPY ./foodgram ./foodgram/
-COPY ./manage.py .
-RUN mkdir -p recipes users api \
-    && mkdir -p recipes/migrations users/migrations api/migrations \
-    && touch recipes/migrations/__init__.py \
-    && touch users/migrations/__init__.py \
-    && touch api/migrations/__init__.py
+RUN pip install -r requirements.txt --no-cache-dir
 
-COPY ./recipes ./recipes/
-COPY ./users ./users/
-COPY ./api ./api/
-COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
+COPY . .
 
-ENTRYPOINT ["/bin/sh", "entrypoint.sh"] 
+RUN python manage.py collectstatic --noinput
+
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--forwarded-allow-ips=*", "foodgram.wsgi"]
