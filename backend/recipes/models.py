@@ -1,12 +1,18 @@
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.conf import settings
 
 from users.models import User
 
 
 class Ingredient(models.Model):
-    name = models.CharField(max_length=128, verbose_name="Название")
-    measurement_unit = models.CharField(max_length=64, verbose_name="Единица измерения")
+    name = models.CharField(
+        max_length=settings.MAX_INGREDIENT_NAME_LENGTH, verbose_name="Название"
+    )
+    measurement_unit = models.CharField(
+        max_length=settings.MAX_INGREDIENT_MEASUREMENT_UNIT_LENGTH,
+        verbose_name="Единица измерения",
+    )
 
     class Meta:
         verbose_name = "Ингредиент"
@@ -23,13 +29,15 @@ class Ingredient(models.Model):
 
 
 class Recipe(models.Model):
-    name = models.CharField(max_length=256, verbose_name="Название")
+    name = models.CharField(
+        max_length=settings.MAX_RECIPE_NAME_LENGTH, verbose_name="Название"
+    )
     text = models.TextField(verbose_name="Описание")
     author = models.ForeignKey(
         User, related_name="recipes", on_delete=models.CASCADE, verbose_name="Автор"
     )
     cooking_time = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(1)],
+        validators=[MinValueValidator(settings.MIN_COOKING_TIME)],
         verbose_name="Время приготовления (в минутах)",
     )
     image = models.ImageField(
@@ -65,7 +73,8 @@ class RecipeIngredient(models.Model):
         verbose_name="Ингредиент",
     )
     amount = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(1)], verbose_name="Количество"
+        validators=[MinValueValidator(settings.MIN_INGREDIENT_AMOUNT)],
+        verbose_name="Количество",
     )
 
     class Meta:

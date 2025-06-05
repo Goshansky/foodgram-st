@@ -26,13 +26,19 @@ git clone https://github.com/Goshansky/foodgram-st.git
 cd foodgram-st
 ```
 
-2. Запустите проект с помощью Docker Compose:
+2. Создайте файл .env в директории infra:
 ```
 cd infra
+cp env.txt .env
+```
+При необходимости отредактируйте файл .env, указав свои значения для переменных окружения.
+
+3. Запустите проект с помощью Docker Compose:
+```
 docker-compose up --build -d
 ```
 
-3. После запуска контейнеров выполните миграции, загрузите ингредиенты, базовое изображение и тестовые данные:
+4. После запуска контейнеров выполните миграции, загрузите ингредиенты, базовое изображение и тестовые данные:
 ```
 docker-compose exec backend_goshansky python manage.py migrate
 docker-compose exec backend_goshansky python manage.py import_ingredients
@@ -40,12 +46,12 @@ docker-compose exec backend_goshansky python manage.py create_default_image
 docker-compose exec backend_goshansky python manage.py create_test_data
 ```
 
-4. Создайте суперпользователя:
+5. Создайте суперпользователя:
 ```
 docker-compose exec backend_goshansky python manage.py createsuperuser
 ```
 
-5. Доступ к проекту:
+6. Доступ к проекту:
 - Веб-интерфейс: http://localhost
 - API-документация: http://localhost/api/docs/
 - Админ-панель: http://localhost/admin/
@@ -68,3 +74,9 @@ docker-compose exec backend_goshansky python manage.py createsuperuser
 - `DOCKER_PASSWORD` - пароль от DockerHub
 - `TELEGRAM_TO` - ID чата Telegram для уведомлений о сборке отзыва
 - `TELEGRAM_TOKEN` - токен бота Telegram
+
+
+## Автор проекта
+
+- **Георгий Пархоменко**
+  - GitHub: [Goshansky](https://github.com/Goshansky)

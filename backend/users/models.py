@@ -1,14 +1,21 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.conf import settings
 
 
 class User(AbstractUser):
 
     email = models.EmailField(
-        max_length=254, unique=True, verbose_name="Электронная почта"
+        max_length=settings.MAX_EMAIL_LENGTH,
+        unique=True,
+        verbose_name="Электронная почта",
     )
-    first_name = models.CharField(max_length=150, verbose_name="Имя")
-    last_name = models.CharField(max_length=150, verbose_name="Фамилия")
+    first_name = models.CharField(
+        max_length=settings.MAX_FIRST_NAME_LENGTH, verbose_name="Имя"
+    )
+    last_name = models.CharField(
+        max_length=settings.MAX_LAST_NAME_LENGTH, verbose_name="Фамилия"
+    )
     avatar = models.ImageField(
         upload_to="avatars/", blank=True, null=True, verbose_name="Аватар"
     )

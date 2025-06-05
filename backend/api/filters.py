@@ -4,15 +4,27 @@ from recipes.models import Ingredient, Recipe
 
 
 class IngredientFilter(FilterSet):
-    name = filters.CharFilter(field_name="name", lookup_expr="istartswith")
+    # Добавил для тестов в postman
+    name = filters.CharFilter(method="filter_name")
 
     class Meta:
         model = Ingredient
         fields = ("name",)
 
+    # Добавил для тестов в postman
+    def filter_name(self, queryset, name, value):
+        exact_matches = queryset.filter(name=value)
+        if exact_matches.exists():
+            return exact_matches
+
+        startswith_matches = queryset.filter(name__startswith=value)
+        if startswith_matches.exists():
+            return startswith_matches
+
+        return queryset.filter(name__istartswith=value)
+
 
 class RecipeFilter(FilterSet):
-    author = filters.NumberFilter(field_name="author__id")
     is_favorited = filters.BooleanFilter(method="filter_favorites")
     is_in_shopping_cart = filters.BooleanFilter(method="filter_shopping_cart")
 
