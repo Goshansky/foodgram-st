@@ -4,14 +4,12 @@ from recipes.models import Ingredient, Recipe
 
 
 class IngredientFilter(FilterSet):
-    # Добавил для тестов в postman
     name = filters.CharFilter(method="filter_name")
 
     class Meta:
         model = Ingredient
         fields = ("name",)
 
-    # Добавил для тестов в postman
     def filter_name(self, queryset, name, value):
         exact_matches = queryset.filter(name=value)
         if exact_matches.exists():

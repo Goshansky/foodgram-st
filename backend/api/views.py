@@ -13,7 +13,7 @@ from .filters import IngredientFilter, RecipeFilter
 from .pagination import RecipePagination
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (
-    CustomUserSerializer,
+    ProfileSerializer,
     IngredientSerializer,
     RecipeCreateSerializer,
     RecipeListSerializer,
@@ -178,43 +178,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         response["Content-Disposition"] = 'attachment; filename="shopping_list.txt"'
         return response
 
-    def create(self, request, *args, **kwargs):
-        # Для тестов в postman
-        if "image" not in request.data:
-            return Response(
-                {"image": ["Обязательное поле."]}, status=status.HTTP_400_BAD_REQUEST
-            )
-        if "image" in request.data and not request.data["image"]:
-            return Response(
-                {"image": ["Это поле не может быть пустым."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        return super().create(request, *args, **kwargs)
-
-    def update(self, request, *args, **kwargs):
-        # Для тестов в postman
-        instance = self.get_object()
-
-        if request.method == "PATCH" and "ingredients" not in request.data:
-            return Response(
-                {"ingredients": ["Обязательное поле."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        serializer = self.get_serializer(
-            instance, data=request.data, partial=kwargs.get("partial", False)
-        )
-
-        if serializer.is_valid():
-            if "image" in request.data and not request.data["image"]:
-                return Response(
-                    {"image": ["Это поле не может быть пустым."]},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            self.perform_update(serializer)
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class UserViewSet(viewsets.ModelViewSet):
 
@@ -227,7 +190,7 @@ class UserViewSet(viewsets.ModelViewSet):
             from djoser.serializers import UserCreateSerializer
 
             return UserCreateSerializer
-        return CustomUserSerializer
+        return ProfileSerializer
 
     def get_permissions(self):
         if self.action == "create":
@@ -246,7 +209,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def me(self, request):
-        serializer = CustomUserSerializer(request.user, context={"request": request})
+        serializer = ProfileSerializer(request.user, context={"request": request})
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
@@ -258,7 +221,6 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer = UserWithRecipesSerializer(
                 page, many=True, context={"request": request}
             )
-            # Для тестов в postman
             data = serializer.data
             for user in data:
                 if "recipes" in user:
@@ -270,7 +232,6 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserWithRecipesSerializer(
             subscriptions, many=True, context={"request": request}
         )
-        # Для тестов в postman
         data = serializer.data
         for user in data:
             if "recipes" in user:

@@ -15,7 +15,19 @@ from recipes.models import (
 from users.models import User
 
 
-class CustomUserCreateSerializer(UserCreateSerializer):
+class ImageUrlField(serializers.ImageField):
+
+    def to_representation(self, value):
+        if not value:
+            return ""
+
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(value.url)
+        return value.url
+
+
+class SignupSerializer(UserCreateSerializer):
 
     class Meta:
         model = User
@@ -57,7 +69,7 @@ class CustomUserCreateSerializer(UserCreateSerializer):
         return value
 
 
-class CustomUserSerializer(UserSerializer):
+class ProfileSerializer(UserSerializer):
 
     is_subscribed = serializers.SerializerMethodField()
 
@@ -131,14 +143,13 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
 
 class RecipeListSerializer(serializers.ModelSerializer):
 
-    author = CustomUserSerializer(read_only=True)
+    author = ProfileSerializer(read_only=True)
     ingredients = RecipeIngredientSerializer(
         source="recipe_ingredients", many=True, read_only=True
     )
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    # Для тестов в postman
-    image = serializers.SerializerMethodField()
+    image = ImageUrlField(read_only=True)
 
     class Meta:
         model = Recipe
@@ -166,22 +177,12 @@ class RecipeListSerializer(serializers.ModelSerializer):
             return False
         return user.shopping_cart.filter(recipe=obj).exists()
 
-    # Для тестов в postman
-    def get_image(self, obj):
-        if obj.image:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.image.url)
-            return obj.image.url
-        return ""
-
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
 
     ingredients = RecipeIngredientCreateSerializer(many=True, required=True)
-    # Для тестов в postman
-    image = Base64ImageField(required=False)
-    author = CustomUserSerializer(read_only=True)
+    image = Base64ImageField(required=True)
+    author = ProfileSerializer(read_only=True)
 
     class Meta:
         model = Recipe
@@ -194,6 +195,14 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             "text",
             "cooking_time",
         )
+
+    def validate(self, data):
+        if self.instance is not None and self.context["request"].method == "PATCH":
+            if "ingredients" not in data:
+                raise serializers.ValidationError(
+                    {"ingredients": ["Обязательное поле."]}
+                )
+        return data
 
     def validate_ingredients(self, value):
         if not value:
@@ -213,6 +222,11 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def validate_image(self, value):
+        if not value:
+            raise serializers.ValidationError("Это поле не может быть пустым.")
+        return value
+
     @transaction.atomic
     def create(self, validated_data):
         ingredients_data = validated_data.pop("ingredients")
@@ -222,11 +236,9 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        # Не убрал, так как используется для тестов в postman
-        if "ingredients" in validated_data:
-            ingredients_data = validated_data.pop("ingredients")
-            instance.recipe_ingredients.all().delete()
-            self._create_recipe_ingredients(instance, ingredients_data)
+        ingredients_data = validated_data.pop("ingredients")
+        instance.recipe_ingredients.all().delete()
+        self._create_recipe_ingredients(instance, ingredients_data)
 
         instance = super().update(instance, validated_data)
         return instance
@@ -248,30 +260,20 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
 
 class RecipeMinifiedSerializer(serializers.ModelSerializer):
-    # Для тестов в postman
-    image = serializers.SerializerMethodField()
+    image = ImageUrlField(read_only=True)
 
     class Meta:
         model = Recipe
         fields = ("id", "name", "image", "cooking_time")
 
-    # Для тестов в postman
-    def get_image(self, obj):
-        if obj.image:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.image.url)
-            return obj.image.url
-        return ""
 
-
-class UserWithRecipesSerializer(CustomUserSerializer):
+class UserWithRecipesSerializer(ProfileSerializer):
 
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.ReadOnlyField(source="recipes.count")
 
-    class Meta(CustomUserSerializer.Meta):
-        fields = CustomUserSerializer.Meta.fields + ("recipes", "recipes_count")
+    class Meta(ProfileSerializer.Meta):
+        fields = ProfileSerializer.Meta.fields + ("recipes", "recipes_count")
 
     def get_recipes(self, obj):
         request = self.context.get("request")
@@ -285,13 +287,8 @@ class UserWithRecipesSerializer(CustomUserSerializer):
             except ValueError:
                 pass
 
-        # Для тестов в postman
         serializer = RecipeMinifiedSerializer(recipes, many=True, context=self.context)
-        data = serializer.data
-        for item in data:
-            if not item.get("image"):
-                item["image"] = ""
-        return data
+        return serializer.data
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
